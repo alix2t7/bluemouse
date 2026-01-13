@@ -50,4 +50,4 @@ echo -e "${GREEN}🚀 啟動 API Server...${NC}"
 echo -e "${CYAN}👉 請留意自動彈出的網頁視窗${NC}"
 echo "---------------------------------------------------"
 
-./venv/bin/python server.py --transport sse --port 8001
+./venv/bin/python run_standalone.py
