@@ -32,3 +32,11 @@ dist/
 build/
 *.spec
 packaging_env/
+
+# Build Artifacts
+build/
+dist/
+*.spec
+packaging_env/
+BlueMouse_v6.1_Core_Logic.zip
+*.zip
