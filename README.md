@@ -39,8 +39,10 @@
 > *"I don't want to see code. I just want it to work safely."*
 > *"我不想看代碼，我只想它能動，而且不要把我的電腦炸掉。"*
 
-👉 **[Download & Run (懶人包指南)](DOWNLOAD_INSTRUCTIONS.md)**
-*(Contains instructions for the One-Click Executable)*
+👉 **直接點擊文件夾中的 `start_bluemouse.command` 即可啟動。**
+*(無需打開終端機，無需輸入任何命令)*
+
+👉 **[詳細圖文教學 (Download Guide)](DOWNLOAD_INSTRUCTIONS.md)**
 
 ### 🅱️ For Engineers (我是工程師)
 > *"I want to see the source code and modify it."*

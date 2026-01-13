@@ -53,37 +53,106 @@ def generate_questions_inline(requirement: str, language: str = 'zh-TW') -> dict
         detected_scenario = 'generic'
     
     # 2. 根據場景和複雜度生成問題
-    questions_map = {
-        'blog': generate_blog_questions,
-        'ecommerce': generate_ecommerce_questions,
-        'booking': generate_booking_questions,
-        'chat': generate_chat_questions,
-        'todo': generate_todo_questions,
-        'video': generate_video_questions,
-        'payment': generate_payment_questions,
-        'user_auth': generate_user_auth_questions,
-        'search': generate_search_questions,
-        'file_storage': generate_file_storage_questions,
-        'generic': generate_generic_questions,
-    }
+    # 直接從擴展的庫中獲取問題，不再依賴硬編碼函數
+    from socratic_questions_library import get_questions_for_module, get_random_questions, QUESTION_LIBRARY
     
-    generator = questions_map.get(detected_scenario, generate_generic_questions)
+    result = {"questions": []}
     
-    # 3. 生成問題並根據複雜度動態裁剪
-    result = generator(requirement, language)
+    # 優先嘗試從庫中獲取匹配的問題
+    # 將所有匹配到的場景的問題都收集起來
+    all_questions = []
     
-    # 4. 智能調整問題數量
-    if 'questions' in result:
-        original_count = len(result['questions'])
+    # 場景映射表 (Regex Key -> Library Key)
+    # 包含了 requirement_complexity_analyzer 可能返回的中文 Key
+    scenario_mapping = {
+        # Blog
+        'blog': 'blog', 
+        '部落格': 'blog',
         
-        # 多場景混合：只要檢測到2個以上場景，就混合生成
-        if len(detected_scenarios) >= 2:
-            result = generate_mixed_scenario_questions(detected_scenarios, question_count, language)
-            print(f"  🔄 多場景混合: {len(detected_scenarios)}個場景 → {question_count}個問題")
-        elif original_count > question_count:
-            # 單場景但問題太多，裁剪
-            result['questions'] = result['questions'][:question_count]
-            print(f"  ✂️ 問題裁剪: {original_count} → {question_count}")
+        # Ecommerce (High complexity, maps to inventory primarily)
+        'ecommerce': 'inventory', 
+        '電商': 'inventory',
+        
+        # Payment
+        'payment': 'payment',
+        '支付': 'payment',
+        
+        # Auth
+        'user_auth': 'authentication',
+        'authentication': 'authentication',
+        '會員': 'authentication',
+        '用戶': 'authentication',
+        
+        # Chat
+        'chat': 'chat',
+        '聊天': 'chat',
+        
+        # Booking
+        'booking': 'booking',
+        '預約': 'booking',
+        
+        # Todo
+        'todo': 'todo',
+        '待辦': 'todo',
+        
+        # Others (Fallback to generic or specific if available)
+        'api': 'api_integration',
+        'privacy': 'privacy',
+        'security': 'security', 
+        'frontend': 'frontend',
+        'data': 'data_consistency',
+        'Web3': 'payment', # Crypto treated as high risk payment
+    }
+
+    # 針對檢測到的所有場景進行遍歷
+    target_scenarios = detected_scenarios if detected_scenarios else [detected_scenario]
+    
+    for sc in target_scenarios:
+        lib_key = scenario_mapping.get(sc, sc) # 嘗試獲取映射，如果沒有就用原名
+        
+        # Special Logic for Ecommerce (Hybrid)
+        if sc in ['ecommerce', '電商']:
+            if 'inventory' in QUESTION_LIBRARY: all_questions.extend(QUESTION_LIBRARY['inventory'])
+            if 'payment' in QUESTION_LIBRARY: all_questions.extend(QUESTION_LIBRARY['payment'])
+            continue
+
+        if lib_key in QUESTION_LIBRARY:
+            all_questions.extend(QUESTION_LIBRARY[lib_key])
+    
+    # 如果找到了問題，進行隨機採樣
+    if all_questions:
+        import random
+        # 去重 (以 text 為 key)
+        seen = set()
+        unique_questions = []
+        for q in all_questions:
+            if q['text'] not in seen:
+                seen.add(q['text'])
+                unique_questions.append(q)
+        
+        # 隨機打亂並取前 N 個
+        random.shuffle(unique_questions)
+        result['questions'] = unique_questions[:max(question_count, 3)] # 至少給3個
+    else:
+        # Fallback 到舊的生成邏輯 (如果庫裡沒有)
+        questions_map = {
+            'blog': generate_blog_questions,
+            'booking': generate_booking_questions,
+            'todo': generate_todo_questions,
+            'video': generate_video_questions,
+            'search': generate_search_questions,
+            'file_storage': generate_file_storage_questions,
+            'generic': generate_generic_questions,
+        }
+        generator = questions_map.get(detected_scenario, generate_generic_questions)
+        result = generator(requirement, language)
+
+    # 3. 確保問題格式統一 (適配舊的前端格式)
+    # Socratic Library 的格式是 simple dict, 需要包裝成 options 格式 if needed
+    # 但這裡假設我們已經統一了。
+    
+    # 4. 打印生成結果以供調試
+    print(f"  ✨ 生成了 {len(result.get('questions', []))} 個問題")
     
     return result
 

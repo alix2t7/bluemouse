@@ -1,5 +1,11 @@
 
 import asyncio
+import sys
+import os
+
+# Ensure we can import from root directory
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from antigravity_inline_generator import generate_questions_inline
 
 
