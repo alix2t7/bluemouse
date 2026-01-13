@@ -34,6 +34,6 @@ echo.
 
 start "" "bluemouse_saas.html"
 start "" "bluemouse_saas.html"
-venv\Scripts\python server.py
+venv\Scripts\python server.py --transport sse --port 8001
 
 pause
