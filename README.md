@@ -125,4 +125,8 @@ python server.py
 - 17 層驗證通過率：**僅 64%** (這就是為什麼您需要它)
 
 ---
-*Built with ❤️ for Engineers who care about Quality.*
+
+### ✅ Cursor Integration
+Using Cursor? We support it natively!
+👉 **[Read the Cursor Setup Guide](CURSOR_GUIDE.md)**
+
