@@ -127,7 +127,7 @@ async def layer2_ollama(requirement: str, language: str) -> dict:
                 ai_text = data.get('response', '')
         
         # 解析JSON
-        result = parse_ai_json(ai_text)
+        result = robust_parse_ai_json(ai_text)
         print(f"  [2/4] ✅ Ollama 生成成功 (~8秒)")
         return result
         
@@ -166,38 +166,193 @@ async def layer3_api_key(requirement: str, language: str, api_key: str = None) -
         raise ValueError(f"API Key 不可用: {e}")
 
 
+
+# ==========================================
+# 🧠 DYNAMIC KNOWLEDGE ENGINE (The Brain)
+# ==========================================
+
+# 1. Load Knowledge Base
+KB_FILE = "knowledge_base.json"
+INVERTED_INDEX = {}
+KB_MODULES = {}
+
+def load_knowledge_base():
+    """載入並構建倒排索引 (O(N) -> O(1))"""
+    global INVERTED_INDEX, KB_MODULES
+    
+    if not os.path.exists(KB_FILE):
+        print("⚠️ Knowledge Base not found, using Fallback Static Rules.")
+        return
+
+    try:
+        with open(KB_FILE, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            
+        KB_MODULES = data.get('modules', {})
+        
+        # Build Index: Keyword -> ModuleKey
+        for mod_key, mod_data in KB_MODULES.items():
+            for kw in mod_data.get('keywords', []):
+                INVERTED_INDEX[kw.lower()] = mod_key
+                
+        print(f"✅ Knowledge Engine Loaded: {len(KB_MODULES)} modules, {len(INVERTED_INDEX)} keywords indexed.")
+        
+    except Exception as e:
+        print(f"❌ Failed to load Knowledge Base: {e}")
+
+# Initialize on module import
+load_knowledge_base()
+
+
+def robust_parse_ai_json(text: str) -> dict:
+    """
+    Robust JSON parser specifically for Socratic Questions.
+    1. Extracts JSON from markdown code blocks if present.
+    2. Injects default 'risk_score' if missing (fixes UI 'Unknown Risk' bug).
+    """
+    try:
+        # Extract JSON from ```json ... ```
+        if "```" in text:
+            parts = text.split("```")
+            for p in parts:
+                p = p.strip()
+                if p.startswith("json"):
+                    p = p[4:].strip()
+                if p.startswith("{") and p.endswith("}"):
+                    text = p
+                    break
+        
+        # Parse
+        data = json.loads(text)
+        
+        # Validate & Inject Defaults
+        if "questions" in data:
+            for q in data["questions"]:
+                if "options" in q:
+                    for opt in q["options"]:
+                        if "risk_score" not in opt:
+                            # Inject default risk score based on option logic or generic text
+                            opt["risk_score"] = "Potential Trade-off"
+                            
+                            # Try to infer from description if possible (simple heuristic)
+                            desc = opt.get("description", "")
+                            if "慢" in desc or "slow" in desc.lower():
+                                opt["risk_score"] = "效能折損"
+                            elif "難" in desc or "complex" in desc.lower():
+                                opt["risk_score"] = "開發成本高"
+                            elif "險" in desc or "risk" in desc.lower():
+                                opt["risk_score"] = "潛在風險"
+                            
+        return data
+    except Exception as e:
+        print(f"JSON Parse Error: {e}")
+        # Return a fallback valid structure to prevent crash
+        return get_fallback_questions()
+
 def layer4_fallback(requirement: str, language: str) -> dict:
     """
-    第四層：規則引擎降級 (Context-Aware)
+    第四層：規則引擎降級 (Data-Driven Multi-Fusion)
     
-    根據用戶需求關鍵字，智能選擇最合適的災難題庫。
+    支援「混合架構」：如果用戶同時提到了電商和區塊鏈，
+    系統會自動融合兩個領域的考題，生成一份客製化的架構問卷。
     """
-    category = detect_category(requirement)
-    print(f"  [4/4] 📋 檢測到場景: {category}，調用對應題庫")
+    # 1. 嘗試多重索引搜尋 (Multi-Index Search)
+    matched_keys = search_index_multi(requirement)
     
-    questions = TEMPLATE_LIBRARY.get(category, TEMPLATE_LIBRARY['default'])
-    return questions(language)
+    # 2. 檢測所有靜態類型 (Static Analysis)
+    static_cats = detect_static_categories(requirement)
+    
+    if matched_keys or static_cats:
+        print(f"  [4/4] 🧠 命中領域: DD={matched_keys}, Static={static_cats} (Fusion Mode)")
+        
+        # 融合所有命中領域的題目
+        fused_questions = []
+        seen_ids = set()
+        
+        # Add Data-Driven Questions
+        for key in matched_keys:
+            module_data = KB_MODULES.get(key)
+            if not module_data: continue
+            
+            for q in module_data.get('questions', []):
+                if q['id'] not in seen_ids:
+                    fused_questions.append(q)
+                    seen_ids.add(q['id'])
+        
+        # Add Static Questions
+        for cat in static_cats:
+             # Default to empty if not found
+             static_qs = TEMPLATE_LIBRARY.get(cat, lambda l: {'questions': []})(language).get('questions', [])
+             for q in static_qs:
+                 if q['id'] not in seen_ids:
+                     fused_questions.append(q)
+                     seen_ids.add(q['id'])
+        
+        # If successfully fused questions, return
+        if fused_questions:
+            return {
+                "questions": fused_questions,
+                "template_id": f"fusion_{'_'.join(matched_keys + static_cats)}"
+            }
+    
+    # 3. 如果完全沒命中，回退到 Default
+    print(f"  [4/4] 📋 未命中特定領域，使用預設題庫")
+    return TEMPLATE_LIBRARY['default'](language)
 
-def detect_category(req: str) -> str:
+def search_index_multi(req: str) -> list:
+    """
+    O(N) 多重關鍵字掃描 - 找出所有相關領域
+    """
     req = req.lower()
-    if any(k in req for k in ['shop', 'buy', 'order', 'pay', 'store', '電商', '購物', '訂單', '支付', '賣']):
-        return 'ecommerce'
+    matches = set()
+    
+    for kw, mod_key in INVERTED_INDEX.items():
+        if kw in req:
+            matches.add(mod_key)
+            
+    return list(matches)
+
+def search_index(req: str) -> str:
+    # 為了兼容性保留單一回傳，但實際邏輯已升級
+    res = search_index_multi(req)
+    return res[0] if res else None
+
+
+def detect_static_categories(req: str) -> list:
+    """找出所有符合的靜態類別 (回傳列表)"""
+    req = req.lower()
+    categories = set()
+    
+    if any(k in req for k in ['shop', 'buy', 'order', 'pay', 'store', '電商', '購物', '訂單', '支付', '賣', '買', '下單']):
+        categories.add('ecommerce')
+        
     if any(k in req for k in ['chat', 'social', 'message', 'friend', 'post', 'feed', '社交', '聊天', '社群', '動態', '這交']):
-        return 'social'
+        categories.add('social')
+        
     if any(k in req for k in ['video', 'stream', 'music', 'blog', 'news', 'cms', '影音', '直播', '新聞', '內容', '文章', 'netflix', 'youtube', 'movie', 'film', 'spotify']):
-        return 'content'
-    if any(k in req for k in ['bank', 'finance', 'money', 'wallet', 'ledger', 'coin', '銀行', '金融', '錢包', '帳本', '支付', '幣']):
-        return 'fintech'
+        categories.add('content')
+        
+    if any(k in req for k in ['bank', 'finance', 'money', 'wallet', 'ledger', 'coin', '銀行', '金融', '錢包', '帳本', '支付', '幣', '區塊鏈', 'blockchain', 'crypto']):
+        categories.add('fintech')
+        
     if any(k in req for k in ['saas', 'crm', 'erp', 'tenant', 'b2b', '管理', '企業', '租戶']):
-        return 'saas'
-    return 'default'
+        categories.add('saas')
+        
+    return list(categories) if categories else []
+
+def detect_static_category(req: str) -> str:
+    # 兼容舊函數，只回傳第一個
+    cats = detect_static_categories(req)
+    return cats[0] if cats else 'default'
 
 # ==========================================
 # 🏛️ TEMPLATE LIBRARY (The Vault of Doom)
 # ==========================================
 
 TEMPLATE_LIBRARY = {
-    'default': lambda lang: get_fallback_questions(lang), # Maintain existing generic one
+    # ... (Keep existing templates as fallback) ...
+    'default': lambda lang: get_fallback_questions(lang), 
+
     
     'ecommerce': lambda lang: {
         "questions": [

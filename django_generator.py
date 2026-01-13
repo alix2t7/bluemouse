@@ -1,9 +1,17 @@
-"""
-Django 代碼生成器
-從 code_generator.py 提取並獨立化 (v5.2 對齊修復)
-"""
-
+import re
 from typing import Dict, List, Any
+
+
+def sanitize_class_name(name: str) -> str:
+    """Sanitize name to valid Python class name (CamelCase)"""
+    # Remove "系統", "模組" and non-alphanumeric chars
+    clean_name = name.replace('系統', '').replace('模組', '')
+    # Convert to Title Case and remove spaces/special chars
+    clean_name = re.sub(r'[^a-zA-Z0-9]', ' ', clean_name).title().replace(' ', '')
+    # Ensure it doesn't start with a number
+    if clean_name and clean_name[0].isdigit():
+        clean_name = 'Model' + clean_name
+    return clean_name or 'Default'
 
 
 def generate_django_code(
@@ -15,6 +23,9 @@ def generate_django_code(
         # 解析用戶回答
         features = parse_user_answers(module, answers)
         
+        # 生成安裝說明 (先生成，因為要放入README)
+        setup_instructions = generate_django_setup_instructions()
+
         # 生成各個文件
         files = {
             "models.py": generate_django_models(module, features),
@@ -23,10 +34,9 @@ def generate_django_code(
             "urls.py": generate_django_urls(module, features),
             "requirements.txt": generate_django_requirements(features),
             "admin.py": generate_django_admin(module, features),
-            "tests.py": generate_django_tests(module, features)
+            "tests.py": generate_django_tests(module, features),
+            "README.md": setup_instructions  # Include README in files dict
         }
-        
-        setup_instructions = generate_django_setup_instructions()
         
         return {
             "files": files,
@@ -53,7 +63,7 @@ def generate_django_code(
 def generate_django_models(module: Dict[str, Any], features: Dict) -> str:
     """生成 Django Models"""
     
-    model_name = module['name'].replace('系統', '').replace('模組', '')
+    model_name = sanitize_class_name(module['name'])
     
     code = f'''"""
 {module['name']} - 數據模型
@@ -92,8 +102,15 @@ class {model_name}(models.Model):
         code += '''    # 基本信息
     name = models.CharField(max_length=200, verbose_name="名稱")
     description = models.TextField(blank=True, verbose_name="描述")
-    
 '''
+    
+    # Financial Precision
+    if features.get('use_decimal'):
+        code += '    amount = models.DecimalField(max_digits=19, decimal_places=4, default=0, verbose_name="金額")\n'
+    else:
+        code += '    amount = models.FloatField(default=0.0, verbose_name="金額")\n'
+    
+    code += '\n'
     
     if features.get('需要狀態'):
         code += '''    # 狀態管理
@@ -134,7 +151,7 @@ class {model_name}(models.Model):
 def generate_django_views(module: Dict[str, Any], features: Dict) -> str:
     """生成 Django Views"""
     
-    model_name = module['name'].replace('系統', '').replace('模組', '')
+    model_name = sanitize_class_name(module['name'])
     
     code = f'''"""
 {module['name']} - API 視圖
@@ -223,7 +240,7 @@ class {model_name}ViewSet(viewsets.ModelViewSet):
 def generate_django_serializers(module: Dict[str, Any], features: Dict) -> str:
     """生成 Django Serializers"""
     
-    model_name = module['name'].replace('系統', '').replace('模組', '')
+    model_name = sanitize_class_name(module['name'])
     
     code = f'''"""
 {module['name']} - 序列化器
@@ -270,7 +287,7 @@ class {model_name}Serializer(serializers.ModelSerializer):
 def generate_django_urls(module: Dict[str, Any], features: Dict) -> str:
     """生成 Django URLs"""
     
-    model_name = module['name'].replace('系統', '').replace('模組', '')
+    model_name = sanitize_class_name(module['name'])
     app_name = model_name.lower()
     
     code = f'''"""
@@ -313,6 +330,10 @@ def generate_django_requirements(features: Dict) -> str:
     
     if features.get('需要快取'):
         requirements.append("django-redis>=5.2.0")
+
+    if features.get('use_decimal'):
+        # For professional money handling
+        requirements.append("django-money>=3.2.0")
     
     return '\n'.join(requirements)
 
@@ -320,7 +341,7 @@ def generate_django_requirements(features: Dict) -> str:
 def generate_django_admin(module: Dict[str, Any], features: Dict) -> str:
     """生成 Django Admin"""
     
-    model_name = module.get('name', '模組').replace('系統', '').replace('模組', '')
+    model_name = sanitize_class_name(module.get('name', '模組'))
     description = module.get('description', '管理')
     
     code = f'''"""
@@ -361,7 +382,7 @@ class {model_name}Admin(admin.ModelAdmin):
 def generate_django_tests(module: Dict[str, Any], features: Dict) -> str:
     """生成 Django Tests"""
     
-    model_name = module['name'].replace('系統', '').replace('模組', '')
+    model_name = sanitize_class_name(module['name'])
     
     code = f'''"""
 {module['name']} - 測試
@@ -493,6 +514,30 @@ def parse_user_answers(module: Dict[str, Any], answers: List[int]) -> Dict[str, 
     }
     
     # 根據回答調整功能
-    # TODO: 根據實際問題和回答解析
+    # User answers are passed as a list of selected option values (e.g. ['redis_stock', 'pydantic'])
+    # Note: The input 'answers' might be indices or values depending on how run_standalone.py passes it.
+    # Looking at run_standalone.py: generate_code accepts `answers: Dict[str, str]` (question_id -> option_value)
     
+    # But this function signature says `answers: List[int]`. This is legacy.
+    # Let's assume run_standalone.py passes a list of VALUES (strings) or we need to update signature.
+    # However, let's treat `answers` as a flexible list of values for now.
+    
+    # Flatten answers if it's a dict, otherwise assume list of values
+    selected_values = []
+    if isinstance(answers, dict):
+        selected_values = list(answers.values())
+    elif isinstance(answers, list):
+         selected_values = [str(x) for x in answers]
+
+    # Map values to features
+    for val in selected_values:
+        if val in ['redis', 'redis_stock', 'async_check', 'throttling', 'cache']:
+            features['需要快取'] = True
+        if val in ['sharding', 'read_write_split']:
+            features['需要資料庫'] = True # Enhanced DB
+        if val in ['pydantic', 'strict']:
+            features['需要嚴格驗證'] = True
+        if val in ['decimal']:
+            features['use_decimal'] = True
+            
     return features
