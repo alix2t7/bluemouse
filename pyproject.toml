@@ -4,7 +4,7 @@ version = "6.0.0"
 description = "Stop Vibe Coding. Global logic sovereignty architecture tool."
 readme = "README.md"
 requires-python = ">=3.10"
-license = "MIT"
+license = "AGPL-3.0-only"
 authors = [
     { name = "BlueMouse Team", email = "architect@bluemouse.io" }
 ]
