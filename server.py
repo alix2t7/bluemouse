@@ -933,6 +933,13 @@ def deliver_bluemouse_project(
 
 
 if __name__ == "__main__":
-    mcp.run()
+    import sys
+    
+    # Check for SSE flag or environment variable (Docker)
+    if "--sse" in sys.argv:
+        print("🚀 Starting in SSE mode (Docker Optimized)...")
+        mcp.run(transport="sse", port=8000, host="0.0.0.0")
+    else:
+        mcp.run()
 
 
