@@ -24,4 +24,4 @@ EXPOSE 8000
 
 # Default command to run the MCP server
 # Smithery uses this as the entry point
-CMD ["fastmcp", "run", "server.py", "--transport", "sse", "--port", "8000", "--host", "0.0.0.0"]
+CMD ["/usr/local/bin/fastmcp", "run", "server.py", "--transport", "sse", "--port", "8000", "--host", "0.0.0.0"]
