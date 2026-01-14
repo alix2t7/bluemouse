@@ -56,7 +56,9 @@ async def run_proof():
 
     for i, case in enumerate(TEST_CASES, 1):
         print(f"測試項 {i}: {case['name']}")
-        print(f"  📥 輸入: {case['payload'].replace('\\n', ' ')}")
+        # 修正舊版 Python f-string 不支援反斜線的問題
+        display_payload = case['payload'].replace('\n', ' ')
+        print(f"  📥 輸入: {display_payload}")
         
         start_time = datetime.now()
         
