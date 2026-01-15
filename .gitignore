@@ -40,3 +40,8 @@ dist/
 packaging_env/
 BlueMouse_v6.1_Core_Logic.zip
 *.zip
+
+# Test Artifacts
+test_*_output/
+tests/acid_tests/__pycache__/
+

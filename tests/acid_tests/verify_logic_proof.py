@@ -11,7 +11,7 @@ import json
 from datetime import datetime
 
 # 確保路徑正確
-sys.path.append(os.getcwd())
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 try:
     from socratic_generator import generate_socratic_questions

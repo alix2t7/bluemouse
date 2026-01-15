@@ -10,7 +10,7 @@ os.environ['ANTHROPIC_API_KEY'] = ""
 os.environ['OPENAI_API_KEY'] = ""
 
 # Add parent directory
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 import socratic_generator
 import code_generator

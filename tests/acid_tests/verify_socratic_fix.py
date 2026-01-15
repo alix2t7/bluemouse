@@ -1,5 +1,8 @@
 
-import asyncio
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
+
 from socratic_generator import layer4_fallback, normalize_question_format
 
 # Mock requirement to trigger fallback
