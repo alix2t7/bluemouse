@@ -17,6 +17,24 @@
 
 ---
 
+## 🌐 Works Everywhere | 全平台支援
+
+BlueMouse is a **standard MCP Server** that works with ANY MCP-compatible client:
+
+| Platform | Status | Installation |
+|----------|--------|--------------|
+| **🎯 Cursor** | ✅ Recommended | Auto-configured with `./Start` |
+| **🚀 Antigravity** | ✅ Supported | Google's AI IDE, MCP ready |
+| **🌊 Windsurf** | ✅ Supported | Codeium's AI IDE |
+| **💬 Claude Desktop** | ✅ Supported | Via [Smithery](https://smithery.ai/server/peijun1700/Bluemouse) |
+| **🌐 Web Browser** | ✅ Standalone | No IDE needed! `http://localhost:8001` |
+| **🔧 Any MCP Client** | ✅ Compatible | Standard MCP protocol |
+
+**[EN]** Don't have Cursor? No problem! BlueMouse works as a standalone web tool.  
+**[中文]** 沒有 Cursor？沒關係！BlueMouse 可以當獨立網頁工具使用。
+
+---
+
 ## 🌟 Why BlueMouse? | 為什麼選擇 BlueMouse？
 
 **[EN]** In the era of **Vibe Coding**, AI generates code faster than we can read. But even the best AI (Claude 3.5 / 4.5) hallucinates. **BlueMouse is your Airbag.** It's not another coding tool—it's a **Quality Gate** that stops bad code before it happens.
