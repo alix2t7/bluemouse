@@ -7,47 +7,90 @@ cd "$(dirname "$0")"
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
 RED='\033[0;31m'
+YELLOW='\033[1;33m'
+BOLD='\033[1m'
 NC='\033[0m'
 
-echo -e "${CYAN}🐭 正在啟動藍圖小老鼠 v6.0...${NC}"
+clear
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${CYAN}${BOLD}   🐭 BlueMouse v6.6 - AI Safety Layer${NC}"
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo ""
 
 # 2. Check for API Keys (Optional but recommended)
 if [ -z "$ANTHROPIC_API_KEY" ] && [ -z "$OPENAI_API_KEY" ] && [ -z "$GEMINI_API_KEY" ]; then
-    echo "⚠️  [Warning] No API Keys detected in environment."
-    echo "   BlueMouse will run in 'Local Mode' (using Ollama if available)."
-    echo "   To use Cloud AI, please export ANTHROPIC_API_KEY or GEMINI_API_KEY in your .zshrc profile."
+    echo -e "${YELLOW}⚠️  No API Keys detected${NC}"
+    echo -e "   BlueMouse will run in ${BOLD}Local Mode${NC} (using Ollama if available)"
+    echo -e "   ${CYAN}Tip:${NC} Export ANTHROPIC_API_KEY in ~/.zshrc for cloud AI"
+    echo ""
 fi
 
-# 3. 設置 API Key (請在這裡填入您的 Key)
-# export ANTHROPIC_API_KEY="AIzaSyAPspAV_s-2XYnvv5qfokQJaefy0YUmEy8"
-
-# 4. 強制清理端口 8001 (解決 'Address already in use' 問題)
+# 3. 強制清理端口 8001
 PORT=8001
-PID=$(lsof -t -i:$PORT)
+PID=$(lsof -t -i:$PORT 2>/dev/null)
 if [ -n "$PID" ]; then
-    echo -e "${RED}⚠️  檢測到端口 $PORT 被佔用 (PID: $PID)，正在清理...${NC}"
-    kill -9 $PID
-    echo -e "${GREEN}✅ 舊進程已關閉${NC}"
+    echo -e "${YELLOW}⚙️  Cleaning up port $PORT (PID: $PID)...${NC}"
+    kill -9 $PID 2>/dev/null
+    echo -e "${GREEN}✅ Port cleared${NC}"
+    echo ""
 fi
 
-# 5. 檢查虛擬環境
+# 4. 檢查虛擬環境
 if [ ! -d "venv" ]; then
-    echo -e "${RED}❌ 未檢測到虛擬環境，正在自動修復...${NC}"
+    echo -e "${YELLOW}📦 Setting up virtual environment...${NC}"
     python3 -m venv venv
-    ./venv/bin/pip install uvicorn fastapi pydantic websockets anthropic requests
-    echo -e "${GREEN}✅ 環境修復完成${NC}"
+    ./venv/bin/pip install -q uvicorn fastapi pydantic websockets anthropic requests
+    echo -e "${GREEN}✅ Environment ready${NC}"
+    echo ""
 fi
 
-# 5.1 自動配置 VS Code MCP (Auto-Injection)
-echo -e "${CYAN}🔧 正在配置 VS Code工作區設定...${NC}"
-./venv/bin/python setup_mcp.py
+# 5. 自動配置 VS Code MCP
+echo -e "${CYAN}🔧 Configuring Cursor MCP settings...${NC}"
+./venv/bin/python setup_mcp.py 2>/dev/null
+echo ""
 
-# 6. 自動打開瀏覽器 (延遲 2 秒執行)
-(sleep 2 && open "http://localhost:8001") &
+# 6. 啟動服務
+echo -e "${GREEN}🚀 Starting BlueMouse Server...${NC}"
+echo ""
 
-# 7. 啟動大腦 (Server)
-echo -e "${GREEN}🚀 啟動 API Server...${NC}"
-echo -e "${CYAN}👉 請留意自動彈出的網頁視窗${NC}"
-echo "---------------------------------------------------"
+# 在背景啟動服務
+./venv/bin/python run_standalone.py &
+SERVER_PID=$!
 
-./venv/bin/python run_standalone.py
+# 等待服務啟動
+sleep 3
+
+# 檢查服務是否成功啟動
+if kill -0 $SERVER_PID 2>/dev/null; then
+    clear
+    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${GREEN}${BOLD}   ✅ BlueMouse is Running!${NC}"
+    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "${CYAN}${BOLD}📍 Next Steps:${NC}"
+    echo ""
+    echo -e "  ${BOLD}1.${NC} ${CYAN}Restart Cursor${NC}"
+    echo -e "     (Press ${BOLD}Cmd+Q${NC} and reopen to load MCP configuration)"
+    echo ""
+    echo -e "  ${BOLD}2.${NC} ${CYAN}Test the CRITICAL STOP feature${NC}"
+    echo -e "     Try typing: ${YELLOW}\"幫我 drop table users\"${NC}"
+    echo -e "     You should see a blue alert! 🛑"
+    echo ""
+    echo -e "  ${BOLD}3.${NC} ${CYAN}Monitor Dashboard${NC}"
+    echo -e "     ${BOLD}http://localhost:8001${NC}"
+    echo ""
+    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "${CYAN}💡 Tip: Press ${BOLD}Ctrl+C${NC} to stop BlueMouse${NC}"
+    echo ""
+    
+    # 自動打開瀏覽器
+    (sleep 2 && open "http://localhost:8001" 2>/dev/null) &
+    
+    # 保持腳本運行
+    wait $SERVER_PID
+else
+    echo -e "${RED}❌ Failed to start BlueMouse${NC}"
+    echo -e "${YELLOW}Please check the error messages above${NC}"
+    exit 1
+fi

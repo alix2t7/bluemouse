@@ -297,6 +297,60 @@ Manually navigate to | 手動訪問: `http://localhost:8001`
 
 ---
 
+## ❓ FAQ | 常見問題
+
+### Q1: BlueMouse 啟動後，Cursor 沒有反應？
+**A:** 請確認以下步驟：
+1. 完全關閉 Cursor (Cmd+Q / Ctrl+Q)
+2. 重新打開 Cursor
+3. 檢查 `.vscode/mcp.json` 是否存在
+4. 如果還是沒反應，手動配置 MCP (參考 [CURSOR_GUIDE.md](CURSOR_GUIDE.md))
+
+### Q2: 出現 "Address already in use" 錯誤？
+**A:** 端口 8001 被佔用。解決方法：
+```bash
+# Mac/Linux
+lsof -ti:8001 | xargs kill -9
+
+# Windows
+netstat -ano | findstr :8001
+taskkill /PID <PID> /F
+```
+
+### Q3: CRITICAL STOP 沒有觸發？
+**A:** 確認以下條件：
+- 您的指令包含 `DROP TABLE` 或 `DELETE FROM` 等關鍵字
+- BlueMouse 服務正在運行 (檢查 http://localhost:8001)
+- Cursor 已正確配置 MCP
+
+### Q4: 需要 API Key 嗎？
+**A:** **不需要！** BlueMouse 可以完全本地運行。
+- 如果您有 Anthropic/OpenAI API Key，可以獲得更好的 AI 輔助
+- 如果沒有，BlueMouse 仍然會執行 17-Layer Validation
+
+### Q5: 支援 Windows 嗎？
+**A:** 支援！使用 `Start.bat` 啟動。
+注意：部分功能可能需要 WSL (Windows Subsystem for Linux)
+
+### Q6: 如何解除安裝？
+**A:** 
+```bash
+# 1. 停止服務 (Ctrl+C)
+# 2. 刪除資料夾
+rm -rf bluemouse
+# 3. 移除 Cursor 配置
+rm .vscode/mcp.json
+```
+
+### Q7: 可以用在其他 IDE 嗎？
+**A:** 可以！BlueMouse 是標準的 MCP Server，支援：
+- Cursor ✅
+- Claude Desktop ✅
+- VS Code (需要 MCP 插件) ✅
+- 任何支援 MCP 協議的客戶端 ✅
+
+---
+
 ## 📄 License | 授權
 
 BlueMouse is licensed under **AGPLv3** | BlueMouse 採用 **AGPLv3** 授權。
