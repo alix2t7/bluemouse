@@ -345,6 +345,168 @@
         "NFT"
       ],
       "questions": []
+    },
+    "infosec": {
+      "keywords": [
+        "authentication",
+        "authorization",
+        "password",
+        "session",
+        "token",
+        "JWT",
+        "SQL injection",
+        "XSS",
+        "CSRF",
+        "encryption",
+        "OWASP",
+        "security",
+        "login",
+        "權限",
+        "密碼",
+        "登入",
+        "加密",
+        "資安"
+      ],
+      "questions": [
+        {
+          "id": "infosec_password_storage",
+          "type": "single_choice",
+          "text": {
+            "zh-TW": "用戶的密碼要怎麼存？",
+            "en": "How will you store user passwords?"
+          },
+          "options": [
+            {
+              "label": {
+                "zh-TW": "A. 明文儲存 (Plain Text)",
+                "en": "A. Plain Text"
+              },
+              "description": {
+                "zh-TW": "開發最快，但資料庫被駭時所有密碼外洩。違反 GDPR。",
+                "en": "Fastest to develop, but all passwords leak if DB is hacked. Violates GDPR."
+              },
+              "risk_score": "極高資安風險",
+              "value": "plaintext"
+            },
+            {
+              "label": {
+                "zh-TW": "B. MD5 / SHA1 雜湊",
+                "en": "B. MD5 / SHA1 Hash"
+              },
+              "description": {
+                "zh-TW": "看起來有加密，但可以用彩虹表暴力破解。2026 年已不安全。",
+                "en": "Looks encrypted, but can be cracked with rainbow tables. Unsafe in 2026."
+              },
+              "risk_score": "中高風險",
+              "value": "md5"
+            },
+            {
+              "label": {
+                "zh-TW": "C. bcrypt / Argon2 (推薦)",
+                "en": "C. bcrypt / Argon2 (Recommended)"
+              },
+              "description": {
+                "zh-TW": "業界標準。慢速雜湊，防止暴力破解。符合 OWASP 建議。",
+                "en": "Industry standard. Slow hashing prevents brute force. OWASP compliant."
+              },
+              "risk_score": "低風險",
+              "value": "bcrypt"
+            }
+          ]
+        },
+        {
+          "id": "infosec_session_management",
+          "type": "single_choice",
+          "text": {
+            "zh-TW": "用戶登入後，Session 要存在哪裡？",
+            "en": "Where will you store user sessions after login?"
+          },
+          "options": [
+            {
+              "label": {
+                "zh-TW": "A. Cookie (前端)",
+                "en": "A. Cookie (Frontend)"
+              },
+              "description": {
+                "zh-TW": "簡單但不安全。容易被 XSS 攻擊竊取。",
+                "en": "Simple but insecure. Vulnerable to XSS attacks."
+              },
+              "risk_score": "高風險",
+              "value": "cookie"
+            },
+            {
+              "label": {
+                "zh-TW": "B. Redis (後端)",
+                "en": "B. Redis (Backend)"
+              },
+              "description": {
+                "zh-TW": "安全且快速。但需要額外的 Redis 伺服器。",
+                "en": "Secure and fast. Requires additional Redis server."
+              },
+              "risk_score": "低風險",
+              "value": "redis"
+            },
+            {
+              "label": {
+                "zh-TW": "C. JWT (無狀態)",
+                "en": "C. JWT (Stateless)"
+              },
+              "description": {
+                "zh-TW": "不需要伺服器存 Session。但 Token 一旦發出就無法撤銷。",
+                "en": "No server-side session storage needed. But tokens can't be revoked once issued."
+              },
+              "risk_score": "中風險",
+              "value": "jwt"
+            }
+          ]
+        },
+        {
+          "id": "infosec_api_protection",
+          "type": "single_choice",
+          "text": {
+            "zh-TW": "API 要怎麼防止暴力破解（例如有人狂試密碼）？",
+            "en": "How will you protect your API from brute force attacks?"
+          },
+          "options": [
+            {
+              "label": {
+                "zh-TW": "A. Rate Limiting (速率限制)",
+                "en": "A. Rate Limiting"
+              },
+              "description": {
+                "zh-TW": "限制每個 IP 每分鐘只能試 5 次。簡單有效。",
+                "en": "Limit each IP to 5 attempts per minute. Simple and effective."
+              },
+              "risk_score": "低風險",
+              "value": "rate_limit"
+            },
+            {
+              "label": {
+                "zh-TW": "B. CAPTCHA (圖形驗證碼)",
+                "en": "B. CAPTCHA"
+              },
+              "description": {
+                "zh-TW": "最安全，但用戶體驗差。可能降低轉換率。",
+                "en": "Most secure, but poor UX. May reduce conversion rate."
+              },
+              "risk_score": "低風險，高摩擦",
+              "value": "captcha"
+            },
+            {
+              "label": {
+                "zh-TW": "C. IP 白名單",
+                "en": "C. IP Whitelist"
+              },
+              "description": {
+                "zh-TW": "只允許特定 IP 訪問。適合內部系統，不適合公開 API。",
+                "en": "Only allow specific IPs. Good for internal systems, not public APIs."
+              },
+              "risk_score": "中風險",
+              "value": "ip_whitelist"
+            }
+          ]
+        }
+      ]
     }
   }
 }

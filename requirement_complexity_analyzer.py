@@ -97,11 +97,14 @@ def analyze_requirement_complexity(requirement: str) -> Dict:
         question_count = 3  # 中等：電商+支付
         depth_level = 'advanced'
     elif complexity_score <= 8:
-        question_count = 4  # 複雜：多租戶SaaS
+        question_count = 5  # 複雜：多租戶SaaS
+        depth_level = 'expert'
+    elif complexity_score <= 12:
+        question_count = 7  # 極複雜：分散式高併發
         depth_level = 'expert'
     else:
-        question_count = 5  # 極複雜：分散式高併發
-        depth_level = 'expert'
+        question_count = 10  # 瘋狂複雜：核能+區塊鏈+社交 (BlueMouse Ultimate Mode)
+        depth_level = 'insane'
     
     # 至少2個問題
     question_count = max(2, question_count)
