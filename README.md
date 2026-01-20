@@ -1,6 +1,7 @@
 # 🐭 BlueMouse v6.6
 ### The AI Safety Layer for Cursor & Claude | AI 代碼安全層
 **Stop Vibe Coding. Start Engineering. | 拒絕憑感覺寫代碼，回歸工程思維。**
+https://bluemouse.app
 
 
 
