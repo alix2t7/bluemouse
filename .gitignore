@@ -45,3 +45,8 @@ BlueMouse_v6.1_Core_Logic.zip
 test_*_output/
 tests/acid_tests/__pycache__/
 
+
+# Private Tools
+my_daily_check.py
+fact_gap_analysis.py
+red_team_test.py
