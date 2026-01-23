@@ -23,7 +23,7 @@ def generate_django_code(
     features = parse_user_answers(module, answers)
     
     # 生成安裝說明 (先生成，因為要放入README)
-    setup_instructions = generate_django_setup_instructions()
+    setup_instructions = generate_django_setup_instructions(features)
 
     # 生成各個文件
     files = {
@@ -497,11 +497,34 @@ class {model_name}TestCase(TestCase):
     return code
 
 
-def generate_django_setup_instructions() -> str:
-    """生成 Django 安裝說明"""
+def generate_django_setup_instructions(features: Dict = None) -> str:
+    """生成 Django 安裝說明 (含 Skills)"""
+    if features is None: features = {}
     
-    return """
+    # Skills Detection
+    skills_commands = ""
+    if features.get('skill_newebpay') or features.get('skill_ecpay') or features.get('skill_recur'):
+        skills_commands += "\n## ⚡ Skills Integration (Auto-Detected)\n"
+        skills_commands += "系統偵測到您需要串接台灣金流/訂閱。請執行以下指令自動安裝依賴：\n\n```bash\n"
+        
+        if features.get('skill_newebpay'):
+            skills_commands += "# 安裝 BlueNew 藍新金流 Skill\n"
+            skills_commands += "npx skills add paid-tw/skills --skill newebpay\n"
+            
+        if features.get('skill_ecpay'):
+            skills_commands += "# 安裝 ECPay 綠界科技 Skill\n"
+            skills_commands += "npx skills add paid-tw/skills --skill ecpay\n"
+            
+        if features.get('skill_recur'):
+            skills_commands += "# 安裝 Recur 訂閱大腦\n"
+            skills_commands += "npx skills add recur-tw/skills\n"
+            
+        skills_commands += "```\n"
+
+    return f"""
 # Django 項目設置說明
+
+{skills_commands}
 
 ## 1. 安裝依賴
 ```bash
@@ -511,16 +534,16 @@ pip install -r requirements.txt
 ## 2. 配置數據庫
 在 settings.py 中配置:
 ```python
-DATABASES = {
-    'default': {
+DATABASES = {{
+    'default': {{
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'your_db_name',
         'USER': 'your_db_user',
         'PASSWORD': 'your_db_password',
         'HOST': 'localhost',
         'PORT': '5432',
-    }
-}
+    }}
+}}
 ```
 
         ## 3. 🤖 AI Agent 喚醒 (For Cursor / Windsurf / Copilot)
@@ -615,5 +638,19 @@ def parse_user_answers(module: Dict[str, Any], answers: List[int]) -> Dict[str, 
         # Medical Domain Detection
         if val in ['drug', 'prescription', 'medical', 'clinic', 'hospital', 'doctor', 'corp_liable', 'on_prem', 'human_verify']:
             features['use_audit_log'] = True
+            
+        if val in ['drug', 'prescription', 'medical', 'clinic', 'hospital', 'doctor', 'corp_liable', 'on_prem', 'human_verify']:
+            features['use_audit_log'] = True
+            
+        # Skills Detection
+        if val == 'paid_tw_newebpay':
+            features['skill_newebpay'] = True
+            features['use_ecommerce'] = True # Enable ecom basics
+        if val == 'paid_tw_ecpay':
+            features['skill_ecpay'] = True
+            features['use_ecommerce'] = True
+        if val == 'recur_tw':
+            features['skill_recur'] = True
+            features['use_ecommerce'] = True
             
     return features

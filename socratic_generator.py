@@ -77,27 +77,27 @@ async def generate_socratic_questions(requirement: str, language: str = 'zh-TW',
                 print(f"  [Hybrid] 💉 Injecting {len(expert_questions)} expert questions...")
                 result['questions'] = expert_questions + result.get('questions', [])
                 
-        return result
+        return enrich_with_skills_locale_aware(result, requirement, language)
     except Exception as e:
         print(f"  [1/4] ⏭️  {e}")
     
     # 層次 2: Ollama 本地 AI
     try:
         result = await layer2_ollama(requirement, language)
-        return result
+        return enrich_with_skills_locale_aware(result, requirement, language)
     except Exception as e:
         print(f"  [2/4] ⏭️  {e}")
     
     # 層次 3: 環境變數 API Key
     try:
         result = await layer3_api_key(requirement, language, api_key)
-        return result
+        return enrich_with_skills_locale_aware(result, requirement, language)
     except Exception as e:
         print(f"  [3/4] ⏭️  {e}")
     
     # 層次 4: 規則引擎降級 (保底)
     result = layer4_fallback(requirement, language)
-    return result
+    return enrich_with_skills_locale_aware(result, requirement, language)
 
 
 def layer1_antigravity_inline(requirement: str, language: str) -> dict:
@@ -1042,8 +1042,123 @@ TEMPLATE_LIBRARY = {
 
 
 
+
+# ==========================================
+# 🧩 UNIVERSAL FUSION MIDDLEWARE (The Skill Injector)
+# ==========================================
+
+def enrich_with_skills_locale_aware(result: dict, requirement: str, language: str) -> dict:
+    """
+    通用融合中間件 (Locale-Aware Fusion)
+    
+    不管上游是 Rule Engine, Ollama 還是 Cloud API，
+    都在這裡強制注入 Skills 相關的關鍵題目。
+    """
+    if not result or 'questions' not in result:
+        return result
+
+    req_lower = requirement.lower()
+    
+    import re
+    # 1. Locale Detection (Regional Lock)
+    # 只有當 (語言是繁中) 或 (需求提到台灣/Taiwan) 或 (內容包含中文字) 時才注入 Taiwan Skills
+    # [\u4e00-\u9fff] covers common CJK Unified Ideographs
+    has_chinese_chars = bool(re.search(r'[\u4e00-\u9fff]', requirement))
+    is_taiwan_context = (language == 'zh-TW') or ('taiwan' in req_lower) or ('台灣' in requirement) or has_chinese_chars
+    
+    if not is_taiwan_context:
+        # TODO: Future expansion for Stripe/PayPal (en-US)
+        return result
+
+    # 2. Keyword Trigger (Hearing Logic) - Enhanced Slang Dictionary
+    triggers = [
+        # Standard
+        '金流', '支付', '錢', '買', '賣', '電商', '訂閱', '會員', 
+        'shop', 'pay', 'money', 'subscription', 'store', 'order',
+        # Slang / Colloquial (Taiwan)
+        '摳摳', '抖內', '贊助', '外快', '發大財', '賺錢', '收單', 
+        '拍賣', '團購', '購物車', '收銀台', '結帳', '刷卡', '轉帳', 'ATM', 
+        '貨到付款', '超商', '繳費', '掛號費', '學費', '月費', 'VIP', '付費牆',
+        # Brand Synonyms / E-commerce patterns
+        '蝦皮', 'MOMO', 'PCHOME', '露天', '淘寶', 'AMAZON', 
+        '開店', '賣場', '商城', 'e-comm', 'commerce', 'cart',
+        # Missed Keywords Fix
+        'business', 'paywall', 'transaction', 'drink', 'food', 
+        '點餐', '交易', '訂單', '商業', '康麼司',
+        '商店', '網站', '平台', '系統'
+    ]
+    
+    if not any(t in req_lower or t in requirement for t in triggers):
+        return result
+
+    print("  [Fusion] 🧩 偵測到金流需求，正在注入社群 Skills (BlueNew/ECPay/Recur)...")
+
+    # 3. Inject Questions (The Exact Copy)
+    skill_questions = [
+        {
+            "id": "skill_payment_gateway",
+            "type": "single_choice",
+            "text": "偵測到您可能需要串接「台灣金流」。為了節省開發時間，您是否考慮使用社群標準 Skill？",
+            "options": [
+                {
+                    "label": "A. 是，使用 paid-tw/skills (藍新 - 推薦)",
+                    "description": "自動安裝設定好的藍新金流 Skill，避免閱讀難懂的官方文件。指令：npx skills add paid-tw/skills --skill newebpay",
+                    "risk_score": "! 依賴外部開源專案",
+                    "value": "paid_tw_newebpay"
+                },
+                {
+                    "label": "B. 是，使用 paid-tw/skills (綠界)",
+                    "description": "自動安裝設定好的綠界金流 Skill，避免閱讀難懂的官方文件。指令：npx skills add paid-tw/skills --skill ecpay",
+                    "risk_score": "! 依賴外部開源專案",
+                    "value": "paid_tw_ecpay"
+                },
+                {
+                    "label": "C. 否，我要手動閱讀官方文件串接",
+                    "description": "需要花大量時間閱讀文件與除錯，但掌控度最高。",
+                    "risk_score": "! 開發週期變長",
+                    "value": "manual_payment"
+                }
+            ]
+        },
+        {
+            "id": "skill_subscription_logic",
+            "type": "single_choice",
+            "text": "您需要處理『定期定額』或『會員權限』嗎？",
+            "options": [
+                {
+                    "label": "A. 是，使用 Recur (Recommended)",
+                    "description": "系統將自動下載 recur-tw/skills (大腦模組) 來管理週期與權限。",
+                    "risk_score": "! 依賴外部 SaaS", 
+                    "value": "recur_tw"
+                },
+                {
+                    "label": "B. 否，我自己處理",
+                    "description": "自行開發訂閱邏輯。",
+                    "risk_score": "! 開發成本極高",
+                    "value": "manual_subscription"
+                }
+            ]
+        }
+    ]
+
+    # Prepend to existing questions
+    # 確保 ID 不重複
+    existing_ids = set(q.get('id') for q in result['questions'])
+    final_questions = []
+    
+    for sq in skill_questions:
+        if sq['id'] not in existing_ids:
+            final_questions.append(sq)
+            existing_ids.add(sq['id'])
+            
+    final_questions.extend(result['questions'])
+    result['questions'] = final_questions
+    
+    return result
+
+
 def build_prompt(requirement: str, language: str) -> str:
-    """構建AI prompt"""
+    """構建AI prompt (含 Negative Constraints)"""
     if language == 'zh-TW':
         return f"""你是一個資深架構師，專門挖掘需求中的邏輯漏洞。
 
@@ -1052,12 +1167,12 @@ def build_prompt(requirement: str, language: str) -> str:
 請生成 2 個「災難導向」的選擇題，用於蘇格拉底式邏輯面試。
 
 重要規則：
-1. **禁止問配置問題**（如：資料庫選 MySQL 還是 PostgreSQL？端口號是多少？）
-2. **必須問災難場景**（如：如果兩個用戶同時操作怎麼辦？如果外部API超時怎麼辦？）
-3. 每個問題提供 3 個選項，每個選項都有明確的「代價」(trade-off)
+1. **禁止提問金流/第三方庫選擇**（如：要用 Stripe 還是藍新？）。這部分由系統外部 Skills 層負責，請跳過。
+2. **禁止問配置問題**（如：資料庫選 MySQL 還是 PostgreSQL？）。
+3. **必須問災難場景**（如：如果兩個用戶同時操作怎麼辦？如果外部API超時怎麼辦？）。
+4. 每個問題提供 3 個選項，每個選項都有明確的「代價」(trade-off)。
 
 請以 JSON 格式返回：
-
 {{
   "questions": [
     {{
@@ -1068,28 +1183,28 @@ def build_prompt(requirement: str, language: str) -> str:
         {{
           "label": "A. 選項名稱",
           "description": "這個選擇的代價是什麼",
-          "risk_score": "風險標籤（如：低風險，高延遲）",
+          "risk_score": "風險標籤",
           "value": "option_value"
         }}
       ]
     }}
   ]
 }}
-
-只返回 JSON，不要其他文字。"""
+只返回 JSON。"""
     else:
         return f"""You are a senior architect who specializes in finding logic gaps in requirements.
 
 User requirement: {requirement}
 
-Generate 2 "disaster-oriented" multiple choice questions for Socratic logic interview.
+Generate 2 "disaster-oriented" questions.
 
 Important rules:
-1. **DO NOT ask configuration questions**
-2. **MUST ask disaster scenarios**
-3. Each question provides 3 options with clear trade-offs
+1. **NEGATIVE CONSTRAINT**: If user asks about payment/ecommerce in Taiwan/Asia context, **DO NOT** suggest generic gateways like Stripe/PayPal. Leave that to the system middleware.
+2. **DO NOT ask configuration questions**.
+3. **MUST ask disaster scenarios**.
 
 Return in JSON format only."""
+
 
 
 def get_fallback_questions(language: str = 'zh-TW') -> dict:

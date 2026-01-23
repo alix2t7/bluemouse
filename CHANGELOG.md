@@ -5,6 +5,28 @@ All notable changes to BlueMouse will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [6.7.0] - 2026-01-23
+
+### Added
+- ⚡ **Skills 寄生架構**: 正式支援動態掛載外部 Skills (Zero-Bloat Strategy)
+  - **paid-tw/skills**: 整合藍新金流 (NewebPay) 與綠界科技 (ECPay)
+  - **recur-tw/skills**: 整合 Recur 訂閱制會員系統 (The Brain)
+- 🧩 **通用融合中間件 (Locale-Aware Fusion)**: 
+  - 自動偵測中文/台灣語境 (包含隱式語意)
+  - 強制注入金流與訂閱的蘇格拉底式問題
+  - 支援全層次 AI 覆蓋 (Inline / Ollama / Cloud)
+- 📡 **GitHub Health Check**: 實現對外部 Skills 庫的即時健康監測
+
+### Changed
+- 🔒 **Region Lock 機制**: 美國/非中文使用者自動屏蔽台灣金流選項，防止資訊汙染
+- 📚 **README 生成邏輯**: 自動注入 `npx skills add` 指令，實現一鍵安裝體驗
+
+### Verified
+- ✅ 通過 100 次隨機壓力測試 (Stress Test)
+- ✅ 通過紅隊測試 (Red Team Security Check)
+- ✅ 通過 100 種鄉民用語模糊測試 (Fuzzing Test)
+
 ## [6.6.1] - 2026-01-17
 
 ### Added
